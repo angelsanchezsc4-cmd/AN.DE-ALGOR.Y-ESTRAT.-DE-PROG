@@ -1,0 +1,182 @@
+"""
+Evaluación T1 - Análisis de Algoritmos y Estrategias de Programación
+Juego de Pokemon con lista de tuplas.
+
+Cada elemento de la lista es una tupla:
+    (nombre_entrenador, nombre_pokemon, ataque, vida)
+"""
+
+import random
+
+
+def crearEntrenador(tupla):
+    """Crea un entrenador y su pokemon y lo agrega a la lista de tuplas.
+    Ataque: aleatorio entre 150 y 250.
+    Vida: aleatorio entre 500 y 900."""
+    nombre_entrenador = input("Ingrese el nombre del entrenador: ")
+    nombre_pokemon = input("Ingrese el nombre del pokemon: ")
+    ataque = random.randint(150, 250)
+    vida = random.randint(500, 900)
+
+    tupla.append((nombre_entrenador, nombre_pokemon, ataque, vida))
+    print(f"\nEntrenador '{nombre_entrenador}' con pokemon '{nombre_pokemon}' "
+          f"creado (Ataque={ataque}, Vida={vida}).\n")
+
+
+def listaEntrenador(tupla):
+    """Ordena la lista por el ataque del pokemon usando el método de burbuja
+    y muestra el listado numerado."""
+    n = len(tupla)
+    # --- Método de burbuja (ordena por ataque, índice 2 de la tupla) ---
+    for i in range(n - 1):
+        for j in range(n - 1 - i):
+            if tupla[j][2] > tupla[j + 1][2]:
+                tupla[j], tupla[j + 1] = tupla[j + 1], tupla[j]
+
+    if n == 0:
+        print("\nNo hay entrenadores registrados.\n")
+        return
+
+    print("\n{:<5}{:<15}{:<15}{:<10}{:<10}".format(
+        "N°", "Entrenador", "Pokemon", "Ataque", "Vida"))
+    print("-" * 55)
+    for idx, (entrenador, pokemon, ataque, vida) in enumerate(tupla, start=1):
+        print("{:<5}{:<15}{:<15}{:<10}{:<10}".format(
+            idx, entrenador, pokemon, ataque, vida))
+    print()
+
+
+def borraPorPokemon(tupla):
+    """Ordena (con selección) una copia de la lista por vida, busca con
+    búsqueda binaria el valor de vida ingresado y elimina de la lista
+    original el primer entrenador/pokemon cuya vida coincida."""
+    if not tupla:
+        print("\nNo hay entrenadores registrados para borrar.\n")
+        return
+
+    valor_buscado = int(input("Ingrese el valor de vida a buscar: "))
+
+    # --- Método de selección: ordena una copia por vida (índice 3) ---
+    copia = tupla.copy()
+    n = len(copia)
+    for i in range(n - 1):
+        menor = i
+        for j in range(i + 1, n):
+            if copia[j][3] < copia[menor][3]:
+                menor = j
+        copia[i], copia[menor] = copia[menor], copia[i]
+
+    # --- Búsqueda binaria sobre la copia ordenada por vida ---
+    izq, der = 0, len(copia) - 1
+    encontrado = None
+    while izq <= der:
+        medio = (izq + der) // 2
+        vida_medio = copia[medio][3]
+        if vida_medio == valor_buscado:
+            encontrado = copia[medio]
+            break
+        elif vida_medio < valor_buscado:
+            izq = medio + 1
+        else:
+            der = medio - 1
+
+    if encontrado is None:
+        print(f"\nNo se encontró ningún pokemon con vida = {valor_buscado}.\n")
+        return
+
+    # Elimina de la lista ORIGINAL el primer entrenador/pokemon cuya vida coincida
+    for i, registro in enumerate(tupla):
+        if registro[3] == valor_buscado:
+            print(f"\nSe eliminó a {registro[0]} y su pokemon {registro[1]} "
+                  f"(Vida={registro[3]}).\n")
+            del tupla[i]
+            break
+
+
+def peleaPokemon(lista):
+    """Hace pelear a 2 pokemones elegidos por su número correlativo.
+    El perdedor se elimina de la lista."""
+    if len(lista) < 2:
+        print("\nSe necesitan al menos 2 pokemones para pelear.\n")
+        return
+
+    listaEntrenador(lista)  # ordena y muestra numerado (1..n)
+
+    try:
+        n1 = int(input("Ingrese el número correlativo del 1er pokemon: "))
+        n2 = int(input("Ingrese el número correlativo del 2do pokemon: "))
+    except ValueError:
+        print("\nEntrada inválida.\n")
+        return
+
+    if n1 == n2 or not (1 <= n1 <= len(lista)) or not (1 <= n2 <= len(lista)):
+        print("\nNúmeros correlativos inválidos.\n")
+        return
+
+    idx1, idx2 = n1 - 1, n2 - 1
+    entrenador1, pokemon1, ataque1, vida1 = lista[idx1]
+    entrenador2, pokemon2, ataque2, vida2 = lista[idx2]
+
+    rand1 = random.randint(0, 5)
+    rand2 = random.randint(0, 5)
+
+    daño_a_2 = ataque1 * rand1
+    daño_a_1 = ataque2 * rand2
+
+    vida1_final = vida1 - daño_a_1
+    vida2_final = vida2 - daño_a_2
+
+    print(f"\n{entrenador1} ({pokemon1}) ataca con {ataque1} x {rand2} "
+          f"= {daño_a_1} de daño a {pokemon2}")
+    print(f"{entrenador2} ({pokemon2}) ataca con {ataque2} x {rand1} "
+          f"= {daño_a_2} de daño a {pokemon1}")
+    print(f"Vida restante -> {pokemon1}: {vida1_final} | {pokemon2}: {vida2_final}\n")
+
+    # Determinar ganador/perdedor y eliminar de la lista (por posición)
+    if vida1_final <= 0 and vida2_final <= 0:
+        print(f"¡Ambos pokemones ({pokemon1} y {pokemon2}) perdieron!\n")
+        for i in sorted([idx1, idx2], reverse=True):
+            del lista[i]
+    elif vida1_final == vida2_final:
+        print(f"¡Empate! Ambos pokemones ({pokemon1} y {pokemon2}) pierden.\n")
+        for i in sorted([idx1, idx2], reverse=True):
+            del lista[i]
+    elif vida1_final > vida2_final:
+        print(f"¡Ganador: {entrenador1} con su pokemon {pokemon1}!\n")
+        del lista[idx2]
+    else:
+        print(f"¡Ganador: {entrenador2} con su pokemon {pokemon2}!\n")
+        del lista[idx1]
+
+
+def menu():
+    lista_tuplas = []
+
+    while True:
+        print("=" * 40)
+        print("        MENÚ POKEMON")
+        print("=" * 40)
+        print("1. Crear Entrenador")
+        print("2. Listar Entrenadores")
+        print("3. Borrar por Pokemon")
+        print("4. Pelea Pokemon")
+        print("5. Fin")
+        opcion = input("Elija una opción: ")
+
+        if opcion == "1":
+            crearEntrenador(lista_tuplas)
+        elif opcion == "2":
+            listaEntrenador(lista_tuplas)
+        elif opcion == "3":
+            borraPorPokemon(lista_tuplas)
+        elif opcion == "4":
+            peleaPokemon(lista_tuplas)
+        elif opcion == "5":
+            print("¡Hasta luego!")
+            break
+        else:
+            print("\nOpción inválida.\n")
+
+
+if __name__ == "__main__":
+    menu()
