@@ -1,0 +1,94 @@
+"""
+Evaluación Final - Análisis de Algoritmos y Estrategias de Programación
+Problema 1: Área de la intersección elipse-hipérbola por el método de Montecarlo.
+
+Elipse:     x^2/a^2 + y^2/b^2 <= 1
+Hipérbola:  x^2/c^2 - y^2/d^2 >= 1
+Área elipse = pi * a * b
+"""
+import math
+import random
+
+
+def pedir_numero(mensaje, tipo=float, minimo=0.0):
+    """Pide un número al usuario y valida que sea mayor que 'minimo'."""
+    while True:
+        try:
+            valor = tipo(input(mensaje))
+            if valor > minimo:
+                return valor
+            print(f"  Error: el valor debe ser mayor que {minimo}.")
+        except ValueError:
+            print("  Error: ingrese un número válido.")
+
+
+def en_elipse(x, y, a, b):
+    return (x ** 2) / (a ** 2) + (y ** 2) / (b ** 2) <= 1
+
+
+def en_hiperbola(x, y, c, d):
+    return (x ** 2) / (c ** 2) - (y ** 2) / (d ** 2) >= 1
+
+
+def montecarlo(a, b, c, d, cantidad):
+    """Genera 'cantidad' puntos (x, y) aleatorios decimales con
+    -a <= x <= a  y  -b <= y <= b, y cuenta los que caen en cada región."""
+    en_elip = 0
+    en_inter = 0
+    for _ in range(cantidad):
+        x = random.uniform(-a, a)
+        y = random.uniform(-b, b)
+        if en_elipse(x, y, a, b):
+            en_elip += 1
+            if en_hiperbola(x, y, c, d):
+                en_inter += 1
+    return en_elip, en_inter
+
+
+def area_exacta(a, b, c, d, n=200000):
+    """Valor de referencia (integración numérica, regla del punto medio).
+    Para cada y, la intersección son los x con c*sqrt(1+y^2/d^2) <= |x| <= a*sqrt(1-y^2/b^2)."""
+    total = 0.0
+    dy = 2 * b / n
+    for i in range(n):
+        y = -b + (i + 0.5) * dy
+        x_max = a * math.sqrt(max(0.0, 1 - (y / b) ** 2))
+        x_min = c * math.sqrt(1 + (y / d) ** 2)
+        if x_max > x_min:
+            total += 2 * (x_max - x_min) * dy  # dos ramas: x>0 y x<0
+    return total
+
+
+def main():
+    print("=== Montecarlo: área de la intersección elipse-hipérbola ===")
+    a = pedir_numero("Ingrese a (elipse): ")
+    b = pedir_numero("Ingrese b (elipse): ")
+    c = pedir_numero("Ingrese c (hipérbola): ")
+    d = pedir_numero("Ingrese d (hipérbola): ")
+    cantidad = pedir_numero("Ingrese la cantidad de puntos aleatorios: ", int, 0)
+
+    area_elipse = math.pi * a * b
+    en_elip, en_inter = montecarlo(a, b, c, d, cantidad)
+
+    if en_elip == 0:
+        print("Ningún punto cayó dentro de la elipse; use más puntos.")
+        return
+
+    area_aprox = area_elipse * en_inter / en_elip
+    area_ref = area_exacta(a, b, c, d)
+    error = abs(area_aprox - area_ref) / area_ref * 100 if area_ref else 0.0
+
+    print()
+    print("----------------------- RESULTADOS -----------------------")
+    print(f"Parámetros: a={a:g}, b={b:g}, c={c:g}, d={d:g}, cantidad={cantidad}")
+    print(f"Área de la elipse (pi*a*b)                  : {area_elipse:.4f}")
+    print(f"Puntos que cayeron dentro de la elipse      : {en_elip}")
+    print(f"Puntos en la intersección hipérbola-elipse  : {en_inter}")
+    print(f"Área aproximada de la intersección          : {area_aprox:.4f}")
+    print(f"   (= {area_elipse:.4f} * {en_inter} / {en_elip})")
+    print(f"Área de referencia (integración numérica)   : {area_ref:.4f}")
+    print(f"Error relativo respecto a la referencia     : {error:.2f} %")
+
+
+if __name__ == "__main__":
+    main()
